@@ -58,6 +58,8 @@ char tmp_buffer[TMP_BUFFER_SIZE+1];       // scratch buffer
 const char wtopts_filename[] PROGMEM = WEATHER_OPTS_FILENAME;
 const char stns_filename[]   PROGMEM = STATION_ATTR_FILENAME;
 const char ifkey_filename[]  PROGMEM = IFTTT_KEY_FILENAME;
+const char mqtt_filename[]   PROGMEM = MQTT_FILENAME;
+
 #if defined(ESP8266)
 const char wifi_filename[]   PROGMEM = WIFI_FILENAME;
 byte OpenSprinkler::state = OS_STATE_INITIAL;
@@ -88,7 +90,12 @@ extern char ether_buffer[];
 #endif
 
 #if defined(MQTT) && defined(OSPI)
-struct mosquitto *mqtt_client = NULL;
+#define MQTT_SERVER_SIZE 50
+#define MQTT_KEEP_ALIVE 60
+struct mosquitto * mqtt_client = NULL;
+char mqtt_server[MQTT_SERVER_SIZE+1];
+int mqtt_port;
+bool OpenSprinkler::mqtt_enable = false;
 #endif
 
 
@@ -500,20 +507,9 @@ extern char ether_buffer[];
 /** Initialize network with the given mac address and http port */
 byte OpenSprinkler::start_network() {
   #ifdef MQTT
-  if (options[OPTION_MQTT_ENABLE]) {
-    mosquitto_lib_init();
-    int keepalive = 60;
-    bool clean_session = true;
-    mqtt_client = mosquitto_new(NULL, clean_session, NULL);
-    if (!mqtt_client) {
-      DEBUG_PRINTLN("CANNOT CREATE MQTT CLIENT");
-      return 1;
-    }
-    if (mosquitto_connect(mqtt_client, DEFAULT_MQTT_HOST, DEFAULT_MQTT_PORT, keepalive)) {
-      DEBUG_PRINTLN("CANNOT CONNECT TO MQTT");
-      return 1;
-    }
-  }
+      mosquitto_lib_init();
+      mqtt_client = mosquitto_new(NULL, true, NULL);
+      reset_mqtt();
   #endif
 
   unsigned int port = (unsigned int)(options[OPTION_HTTPPORT_1]<<8) + (unsigned int)options[OPTION_HTTPPORT_0];
@@ -547,6 +543,18 @@ void OpenSprinkler::update_dev() {
 }
 #endif // end network init functions
 
+void OpenSprinkler::reset_mqtt() {
+#if defined(MQTT) && defined(OSPI)
+  mosquitto_disconnect(mqtt_client);
+  read_from_file(mqtt_filename, tmp_buffer);
+  if (strlen(tmp_buffer) != 0) {
+    sscanf(tmp_buffer, PSTR("\"server\":\"%[^\"]\",\"port\":\%d,\"enable\":\%d"), mqtt_server, &mqtt_port, &mqtt_enable);
+    if (mqtt_enable)
+      if (mosquitto_connect(mqtt_client, mqtt_server, mqtt_port, MQTT_KEEP_ALIVE))
+        DEBUG_PRINTLN("CANNOT CONNECT TO MQTT");
+  }
+#endif
+}
 
 void OpenSprinkler::mqtt_publish(const char *topic, const char *payload) {
 #if defined(MQTT) && defined(OSPI)
@@ -1837,6 +1845,7 @@ void OpenSprinkler::options_setup() {
     // 5. delete sd file
     remove_file(wtopts_filename);
     remove_file(ifkey_filename);
+    remove_file(mqtt_filename);
 #endif
 
     // 6. write options

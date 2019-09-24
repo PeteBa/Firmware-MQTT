@@ -122,6 +122,7 @@ struct ConStatus {
 extern const char wtopts_filename[];
 extern const char stns_filename[];
 extern const char ifkey_filename[];
+extern const char mqtt_filename[];
 extern const byte op_max[];
 extern const char op_json_names[];
 #ifdef ESP8266
@@ -149,6 +150,8 @@ public:
                               // to handle RPi rev. 1
 #endif
 
+  static bool mqtt_enable;
+
   static NVConData nvdata;
   static ConStatus status;
   static ConStatus old_status;
@@ -172,6 +175,7 @@ public:
   static ulong checkwt_success_lasttime; // time when weather check was successful
   static ulong powerup_lasttime;      // time when controller is powered up most recently
   static byte  weather_update_flag; 
+  
   // member functions
   // -- setup
   static void update_dev();   // update software for Linux instances
@@ -179,6 +183,7 @@ public:
   static void begin();        // initialization, must call this function before calling other functions
   static byte start_network();  // initialize network with the given mac and port
   static byte start_ether();  // initialize ethernet with the given mac and port
+  static void reset_mqtt();
   static void mqtt_publish(const char *topic, const char *payload);  // publish mqtt message
 #if defined(ARDUINO)
   static bool load_hardware_mac(uint8_t*, bool wired=false);  // read hardware mac address

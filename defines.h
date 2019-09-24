@@ -56,6 +56,7 @@ typedef unsigned long ulong;
 #define WEATHER_OPTS_FILENAME "wtopts.txt"    // weather options file
 #define STATION_ATTR_FILENAME "stns.dat"      // station attributes data file
 #define WIFI_FILENAME         "wifi.dat"      // wifi credentials file
+#define MQTT_FILENAME         "mqtt.txt"      // MQTT requires server and port number
 #define IFTTT_KEY_FILENAME    "ifkey.txt"
 #define IFTTT_KEY_MAXSIZE     128
 #define STATION_SPECIAL_DATA_SIZE  (TMP_BUFFER_SIZE - 8)

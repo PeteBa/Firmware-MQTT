@@ -1268,6 +1268,9 @@ void server_json_controller_main() {
   if(read_from_file(ifkey_filename, tmp_buffer)) {
     bfill.emit_p(PSTR(",\"ifkey\":\"$S\""), tmp_buffer);
   }
+  if (read_from_file(mqtt_filename, tmp_buffer)) {
+    bfill.emit_p(PSTR(",\"mqtt\":{$S}"), tmp_buffer);
+  }
 #endif
 
 #ifdef ESP8266
@@ -1541,6 +1544,17 @@ void server_change_options()
     tmp_buffer[0]=0;
     write_to_file(ifkey_filename, tmp_buffer, strlen(tmp_buffer));
   }  
+  keyfound = 0;
+  if (findKeyVal(p, tmp_buffer, TMP_BUFFER_SIZE, PSTR("mqtt"), true, &keyfound)) {
+    urlDecode(tmp_buffer);
+    tmp_buffer[TMP_BUFFER_SIZE-1]=0;
+    write_to_file(mqtt_filename, tmp_buffer, strlen(tmp_buffer));
+    os.reset_mqtt();
+  } else if (keyfound) {
+    tmp_buffer[0]=0;
+    write_to_file(mqtt_filename, tmp_buffer, strlen(tmp_buffer));
+    os.reset_mqtt();
+  }
   // if not using NTP and manually setting time
   if (!os.options[OPTION_USE_NTP] && findKeyVal(p, tmp_buffer, TMP_BUFFER_SIZE, PSTR("ttt"), true)) {
     unsigned long t;
